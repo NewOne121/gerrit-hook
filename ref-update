@@ -58,7 +58,7 @@ fi
 
 
 ## Check for Jira issue in footer
-if [ "$(git -c pager.show=false show --no-patch --pretty=format:%B $NEWREV | egrep -q '^(Issue: AL[A-Z]+\-[0-9]+,?)+$'; echo $?)" -gt "0" ]; then
+if [ "$(git -c pager.show=false show --no-patch --pretty=format:%B $NEWREV | egrep -q '^(Issue: AM[A-Z]+\-[0-9]+,?)+$'; echo $?)" -gt "0" ]; then
     echo "Commit $NEWREV Missing Jira key in message commit footer. Expected format: 'Issue: AMXXX-1234'"
     echo "Use git commit --amend to add missing footer, then try again."
     exit 1
