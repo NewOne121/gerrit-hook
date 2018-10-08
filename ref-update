@@ -1,0 +1,65 @@
+#!/bin/bash
+BASE="/var/gerrit/review_site/git"
+
+while [ "$1" != "" ]; do
+    case $1 in
+        --project)      PROJECT=$2; shift;;
+        --refname)      REFNAME=$2; shift;;
+        --uploader)     UPLOADER=$2; shift;;
+        --oldrev)       OLDREV=$2; shift;;
+        --newrev)       NEWREV=$2; shift;;
+    esac
+    shift;
+done
+
+
+cd "$BASE/$PROJECT.git"
+
+#DEBUG AREA========
+
+#echo "cd "$BASE/$PROJECT.git"" >> /var/gerrit/review_site/tmp_plugins/ref-update-test.log
+
+#echo "Project is: $PROJECT" >> /var/gerrit/review_site/tmp_plugins/ref-update-test.log
+#echo "Refname is: $REFNAME" >> /var/gerrit/review_site/tmp_plugins/ref-update-test.log
+#echo "Uploader is: $UPLOADER" >> /var/gerrit/review_site/tmp_plugins/ref-update-test.log
+#echo "Oldrev is: $OLDREV" >> /var/gerrit/review_site/tmp_plugins/ref-update-test.log
+#echo "Newrev is: $NEWREV" >> /var/gerrit/review_site/tmp_plugins/ref-update-test.log
+#echo "END OF PARSING" >> /var/gerrit/review_site/tmp_plugins/ref-update-test.log
+
+#DEBUG PIECE
+#if [ "$PROJECT" = "test_hook" ];
+#then
+#       true
+#else
+#       echo "Project is $PROJECT, skipping further checks." >>  /var/gerrit/review_site/tmp_plugins/ref-update-test.log
+#       exit 0
+#fi
+#echo "Project is $PROJECT. Performing further checks." >> /var/gerrit/review_site/tmp_plugins/ref-update-test.log
+
+#=================
+
+if ! [ -f "HEAD" ]; then
+    echo "No bare git repository"
+    exit 0
+fi
+
+if  [ "$REFNAME" = "refs/meta/config" ]
+then
+        echo "Meta config edited via UI"
+        exit 0
+fi
+
+
+#if commit has more than 1 parent, it's merge commit and hook shouldn't be applied.
+if [ $(git show --summary --format="raw" $NEWREV | grep -c parent) -gt "1" ]; then
+  echo "Merge Commit"
+  exit 0
+fi
+
+
+## Check for Jira issue in footer
+if [ "$(git -c pager.show=false show --no-patch --pretty=format:%B $NEWREV | egrep -q '^(Issue: AHML[A-Z]+\-[0-9]+,?)+$'; echo $?)" -gt "0" ]; then
+    echo "Commit $NEWREV Missing Jira key in message commit footer. Expected format: 'Issue: AHMLXXX-1234'"
+    echo "Use git commit --amend to add missing footer, then try again."
+    exit 1
+fi
